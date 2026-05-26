@@ -1,0 +1,195 @@
+Aqui está um site simples em HTML/CSS (em Português) com tema preto e vermelho, voltado para Informática (T.I.) no Ensino Médio da ETEC. O link do Vestibulinho da ETEC aponta para a página oficial indicada.
+
+Copie e cole em um arquivo .html e abra no navegador.
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Informática (T.I.) - Ensino Médio ETEC</title>
+  <style>
+    :root{
+      --bg:#000;
+      --accent:#c40000; /* vermelho */
+      --muted:#222;
+      --text:#eee;
+      --card:#111;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background:linear-gradient(180deg,var(--bg),#070707);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+    }
+    header{
+      background:linear-gradient(90deg,var(--muted),#0a0a0a);
+      border-bottom:4px solid var(--accent);
+      padding:18px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px;
+    }
+    .logo{
+      width:48px;height:48px;border-radius:8px;
+      background:linear-gradient(135deg,var(--accent) 0%, #7a0000 100%);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;color:#fff;font-size:18px;
+    }
+    nav a{
+      color:var(--text);text-decoration:none;margin-left:14px;padding:8px 10px;border-radius:6px;
+    }
+    nav a:hover{background:rgba(196,0,0,0.08);color:var(--accent)}
+    main{padding:28px 20px;max-width:1100px;margin:0 auto;}
+    .hero{
+      display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(255,0,0,0.04),transparent);
+      padding:28px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);
+    }
+    .hero h1{margin:0 0 8px 0;font-size:28px;color:var(--accent)}
+    .hero p{margin:0 0 12px 0;color:#ddd}
+    .cta{
+      display:inline-block;background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;text-decoration:none;font-weight:600;
+    }
+    section{margin-top:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .card{
+      background:var(--card);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);
+    }
+    h2{color:var(--accent);margin:0 0 10px 0}
+    ul{margin:8px 0 0 18px;padding:0}
+    footer{
+      margin-top:28px;padding:18px;text-align:center;color:#bbb;border-top:1px dashed rgba(255,255,255,0.03);
+    }
+    a.ext{color:var(--accent);text-decoration:none}
+    @media (min-width:900px){
+      .hero{flex-direction:row;align-items:center;justify-content:space-between}
+      .hero .info{max-width:70%}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">TI</div>
+      <div>
+        <div style="font-weight:700">Informática (T.I.)</div>
+        <div style="font-size:12px;color:#bbb">Ensino Médio - ETEC</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#sobre">Sobre</a>
+      <a href="#grade">Grade</a>
+      <a href="#carreiras">Carreiras</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#contato">Contato</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="info">
+        <h1>Curso Técnico em Informática (T.I.) — ETEC</h1>
+        <p>Formação técnica integrada ao Ensino Médio com foco em programação, redes, manutenção e soluções digitais para o mercado de trabalho.</p>
+        <a class="cta" href="https://www.vestibulinhoetec.com.br/" target="_blank" rel="noopener">Ir para Vestibulinho ETEC (oficial)</a>
+      </div>
+      <div style="margin-top:14px;">
+        <img alt="ícone informática" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='120'><rect width='100%' height='100%' fill='%23000000'/><text x='50%' y='55%' fill='%23c40000' font-size='36' font-family='Arial' text-anchor='middle' dominant-baseline='middle'>T.I.</text></svg>" style="border-radius:8px;display:block;"/>
+      </div>
+    </section>
+
+    <section id="sobre">
+      <div class="card">
+        <h2>Sobre o curso</h2>
+        <p>O curso prepara estudantes para atuar com desenvolvimento de sistemas, infraestrutura de redes, segurança básica, manutenção de hardware e suporte ao usuário. Ênfase em práticas, projetos e estágio.</p>
+      </div>
+    </section>
+
+    <section id="grade">
+      <h2 style="margin-top:18px">Grade e disciplinas</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Componentes técnicos</h3>
+          <ul>
+            <li>Algoritmos e Lógica de Programação</li>
+            <li>Programação Web e Mobile</li>
+            <li>Sistemas Operacionais</li>
+            <li>Redes e Protocolos</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Componentes integrados</h3>
+          <ul>
+            <li>Matemática Aplicada</li>
+            <li>Empreendedorismo e Projeto</li>
+            <li>Segurança da Informação</li>
+            <li>Estágio Supervisionado</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="carreiras">
+      <h2 style="margin-top:18px">Possíveis carreiras</h2>
+      <div class="grid">
+        <div class="card">
+          <ul>
+            <li>Desenvolvedor de Software</li>
+            <li>Técnico de Suporte / Help Desk</li>
+            <li>Administrador de Redes</li>
+            <li>Técnico em Manutenção</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Portas de entrada</h3>
+          <p>Estágio, freelancing, cursos complementares e especializações técnicas. O diploma técnico + ensino médio facilita acesso ao mercado e a cursos superiores.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="recursos">
+      <h2 style="margin-top:18px">Recursos e materiais</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Ambientes</h3>
+          <ul>
+            <li>Laboratórios de Informática</li>
+            <li>Plataformas de ensino (Moodle/GitHub)</li>
+            <li>Salas de redes e servidores</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Links úteis</h3>
+          <ul>
+            <li><a class="ext" href="https://www.vestibulinhoetec.com.br/" target="_blank" rel="noopener">Vestibulinho ETEC — oficial</a></li>
+            <li><a class="ext" href="https://www.microsoft.com/learning" target="_blank" rel="noopener">Microsoft Learn</a></li>
+            <li><a class="ext" href="https://developer.mozilla.org/" target="_blank" rel="noopener">MDN Web Docs</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="contato">
+      <h2 style="margin-top:18px">Contato / Mais informações</h2>
+      <div class="card">
+        <p>Para informações específicas da sua ETEC local, entre em contato com a secretaria da unidade ou consulte o Vestibulinho no link acima.</p>
+        <p style="margin:8px 0 0 0;font-size:13px;color:#bbb">Desenvolvido para apresentação do curso — tema preto e vermelho.</p>
+      </div>
+    </section>
+
+    <footer>
+      © ETEC • Curso Técnico em Informática — Este site é apenas um exemplo informativo.
+    </footer>
+  </main>
+</body>
+</html>
