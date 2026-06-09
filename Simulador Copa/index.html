@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador Copa do Mundo</title>
+  <style>
+    body{margin:0;padding:20px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:#0b1220;color:#e6eefc}
+    .wrap{max-width:1100px;margin:0 auto}
+    header{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#e6eefc;padding:10px 14px;border-radius:12px;font-weight:800;cursor:pointer}
+    button.primary{background:rgba(78,161,255,.18);border-color:rgba(78,161,255,.55)}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:1000px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px}
+    h2{margin:0 0 10px 0;font-size:14px;color:#a7b4d6;text-transform:uppercase;letter-spacing:.2px}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{border-bottom:1px solid rgba(255,255,255,.08);padding:7px 6px;font-size:13px}
+    th{color:#a7b4d6;text-align:left}
+    .tag{display:inline-block;padding:2px 8px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);border-radius:999px;font-weight:900;color:#a7b4d6;font-size:12px}
+    .champ{font-size:18px;font-weight:1000;margin:10px 0 0 0}
+    .log{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;font-size:12px;line-height:1.45;color:#a7b4d6}
+    .match{padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.02);margin-bottom:10px}
+    .match .teams{display:flex;justify-content:space-between;gap:10px;font-weight:900}
+    .match .small{margin-top:6px;color:#a7b4d6;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Simulador Copa do Mundo (Grupos + Mata-mata simplificado)</h1>
+        <div class="tag" id="seedTag">Semente: —</div>
+      </div>
+      <div class="controls">
+        <button id="btnSimularGrupos" class="primary" type="button">Iniciar Grupos</button>
+        <button id="btnAvancarGrupo" type="button">Próximo Grupo</button>
+        <button id="btnSimularMataMata" type="button">Simular Mata-mata</button>
+        <button id="btnNovoSorteio" type="button">Novo Sorteio</button>
+        <button id="btnLimpar" type="button">Limpar</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Fase de Grupos</h2>
+        <div id="gruposContainer"></div>
+      </section>
+
+      <section class="card">
+        <h2>Mata-mata</h2>
+        <div id="mataContainer"></div>
+        <p id="campeao" class="champ"></p>
+      </section>
+    </div>
+
+    <div style="height:14px"></div>
+
+    <section class="card">
+      <h2>Eventos</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </div>
+
+  <script>
+    // Seed reprodutível
+    function mulberry32(a){
+      return function(){
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function clamp(n,min,max){return Math.max(min,Math.min(max,n));}
+
+    const gruposBase = {
+      A:["México","Africa do Sul","Coreia Do Sul","Republica Tchéquia"],
+      B:["Canadá","Bósnia","Catar","Suíça"],
+      C:["Brasil","Marrocos","Haiti","Escócia"],
+      D:["EUA","Paraguai","Austrália","Turquia"],
+      E:["Alemanha","Curaçau","Costa do Marfim","Equador"],
+      F:["Holanda","Japão","Suécia","Tunísia"],
+      G:["Bélgica","Egito","Irã","Nova Zelândia"],
+      H:["Espanha","Cabo Verde","Arábia Saudita","Uruguai"],
+      I:["França","Senegal","Iraque","Noruega"],
+      J:["Argentina","Argélia","Áustria","Jordânia"],
+      K:["Portugal","RD Congo","Uzbequistão","Colômbia"],
+      L:["Inglaterra","Croácia","Gana","Panamá"]
+    };
+
+    function ratingFromName(name){
+      let hash=0;
+      for(let i=0;i<name.length;i++) hash=(hash*31+name.charCodeAt(i))>>>0;
+      return 60+(hash%31);
+    }
+
+    function initTabela(times){
+      const estado={};
+      for(const t of times){
+        estado[t]={time:t,J:0,V:0,E:0,D:0,GP:0,GC:0,SG:0,Pts:0};
+      }
+      return estado;
+    }
+
+    function ordenarClassificacao(tabela){
+      const arr=Object.values(tabela);
+      arr.sort((a,b)=>{
+        if(b.Pts!==a.Pts) return b.Pts-a.Pts;
+        if(b.SG!==a.SG) return b.SG-a.SG;
+        if(b.GP!==a.GP) return b.GP-a.GP;
+        if(b.V!==a.V) return b.V-a.V;
+        return a.time.localeCompare(b.time,'pt-BR');
+      });
+      return arr;
+    }
+
+    function simulateMatch(rng, home, away){
+      const rh=ratingFromName(home);
+      const ra=ratingFromName(away);
+      const diff=(rh-ra)/10;
+
+      const base=1.2;
+      const meanHome=clamp(base+diff*0.45,0.2,3.0);
+      const meanAway=clamp(base-diff*0.35,0.2,3.0);
+
+      function goals(mean){
+        let g=0;
+        while(g<7 && rng()<mean/(g+1)) g++;
+        return g;
+      }
+
+      let gh=goals(meanHome);
+      let ga=goals(meanAway);
+      if(gh===0 && ga===0 && rng()<0.25){
+        if(rh>=ra) gh=1; else ga=1;
+      }
+      return {gh,ga};
+    }
+
+    function applyMatch(tabela, home, away, gh, ga){
+      const h=tabela[home];
+      const a=tabela[away];
+      h.J++; a.J++;
+      h.GP+=gh; h.GC+=ga;
+      a.GP+=ga; a.GC+=gh;
+      h.SG=h.GP-h.GC;
+      a.SG=a.GP-a.GC;
+
+      if(gh>ga){ h.V++; h.Pts+=3; a.D++; }
+      else if(ga>gh){ a.V++; a.Pts+=3; h.D++; }
+      else { h.E++; a.E++; h.Pts++; a.Pts++; }
+    }
+
+    function logLine(txt){
+      const el=document.getElementById('log');
+      el.textContent = el.textContent ? (el.textContent + "\n" + txt) : txt;
+    }
+
+    function clearAll(){
+      document.getElementById('gruposContainer').innerHTML='';
+      document.getElementById('mataContainer').innerHTML='';
+      document.getElementById('log').textContent='';
+      document.getElementById('campeao').textContent='';
+      document.getElementById('seedTag').textContent='Semente: —';
+      window.__seed=null;
+      window.__classificados=null;
+    }
+
+    function renderGrupos(classificadosObj){
+      const cont=document.getElementById('gruposContainer');
+      cont.innerHTML='';
+      const order=Object.keys(gruposBase).sort();
+
+      for(const g of order){
+        const tabela=classificadosObj[g];
+        const card=document.createElement('div');
+        card.style.marginBottom='12px';
+
+        const title=document.createElement('div');
+        title.innerHTML='<span class="tag">Grupo '+g+'</span>';
+        card.appendChild(title);
+
+        const table=document.createElement('table');
+        table.innerHTML=`
+          <thead>
+            <tr><th>Pos</th><th>Time</th><th>Pts</th><th>SG</th></tr>
+          </thead>
+          <tbody></tbody>
+        `;
+
+        const tbody=table.querySelector('tbody');
+        tabela.forEach((r,idx)=>{
+          const tr=document.createElement('tr');
+          tr.innerHTML='<td>'+ (idx+1) +'</td><td>'+r.time+'</td><td>'+r.Pts+'</td><td>'+r.SG+'</td>';
+          if(idx<2) tr.style.fontWeight='900';
+          tbody.appendChild(tr);
+        });
+
+        card.appendChild(table);
+        cont.appendChild(card);
+      }
+    }
+
+    function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+    async function simulateGrupo(g, rng){
+      const times = gruposBase[g];
+      const tabela = initTabela(times);
+
+      logLine(`\nSimulando Grupo ${g}...`);
+      for(let i=0;i<times.length;i++){
+        for(let j=i+1;j<times.length;j++){
+          const home = rng()<0.5 ? times[i] : times[j];
+          const away = home===times[i] ? times[j] : times[i];
+          const {gh,ga}=simulateMatch(rng,home,away);
+          applyMatch(tabela,home,away,gh,ga);
+          logLine(`Grupo ${g}: ${home} ${gh}x${ga} ${away}`);
+          await sleep(260); // dá tempo do usuário acompanhar
+        }
+      }
+
+      return ordenarClassificacao(tabela);
+    }
+
+    async function simulateGroups(customSeed){
+      clearAll();
+      const seed = customSeed ?? (Date.now()%1000000000);
+      window.__seed = seed;
+      document.getElementById('seedTag').textContent = 'Semente: ' + seed;
+
+      const rng = mulberry32(seed);
+      const classificados = {};
+
+      const order = Object.keys(gruposBase).sort();
+      // inicializa estado para o usuário ir avançando grupo por grupo
+      window.__gruposOrder = order;
+      window.__nextGrupoIndex = 0;
+      window.__classificados = classificados;
+
+      // já simula o primeiro imediatamente
+      const first = order[0];
+      window.__nextGrupoIndex = 1;
+      classificados[first] = await simulateGrupo(first, rng);
+      renderGrupos(classificados);
+      window.__classificados = classificados;
+
+      logLine('--- Simulação iniciada: pronto para avançar ---');
+    }
+
+    function simulateBracket(teams16, rng){
+      const rounds=[{name:'Oitavas',n:8},{name:'Quartas',n:4},{name:'Semis',n:2},{name:'Final',n:1}];
+      let pairList=[];
+      for(let i=0;i<teams16.length;i+=2) pairList.push([teams16[i],teams16[i+1]]);
+
+      const results=[];
+      for(const r of rounds){
+        const matches=[];
+        const winners=[];
+        for(const pair of pairList){
+          const [t1,t2]=pair;
+          const home = rng()<0.5 ? t1 : t2;
+          const away = home===t1 ? t2 : t1;
+          const {gh,ga}=simulateMatch(rng,home,away);
+
+          let winner,decidedBy;
+          if(gh>ga){ winner=home; decidedBy='tempo normal'; }
+          else if(ga>gh){ winner=away; decidedBy='tempo normal'; }
+          else { winner = rng()<0.5 ? home : away; decidedBy='pênaltis'; }
+
+          // converter para t1 vs t2
+          const g1 = (home===t1)?gh:ga;
+          const g2 = (home===t1)?ga:gh;
+
+          matches.push({t1,t2,g1,g2,winner,decidedBy});
+          winners.push(winner);
+          logLine(`${r.name}: ${t1} ${g1}x${g2} ${t2} — vence ${winner} (${decidedBy})`);
+        }
+        results.push(matches);
+        pairList=[];
+        for(let i=0;i<winners.length;i+=2) pairList.push([winners[i],winners[i+1]]);
+      }
+      return results;
+    }
+
+    function renderMataMata(resultsByRound){
+      const cont=document.getElementById('mataContainer');
+      cont.innerHTML='';
+      for(const round of resultsByRound){
+        for(const m of round){
+          const node=document.createElement('div');
+          node.className='match';
+          node.innerHTML=`
+            <div class="teams"><span>${m.t1}</span><span>${m.g1}x${m.g2}</span><span>${m.t2}</span></div>
+            <div class="small">Vencedor: <b>${m.winner}</b> (${m.decidedBy})</div>
+          `;
+          cont.appendChild(node);
+        }
+      }
+    }
+
+    function simulateMataMata(){
+      const classificados=window.__classificados;
+      if(!classificados){ logLine('Clique em "Simular Grupos" primeiro.'); return; }
+
+      const seed=window.__seed;
+      const rng=mulberry32(seed);
+
+      // pega 1º e 2º de todos os 12 grupos => 24 times, seleciona 16 pelo rating (para manter simples)
+      const order=Object.keys(gruposBase).sort();
+      const qualified=[];
+      for(const g of order){ qualified.push(classificados[g][0].time, classificados[g][1].time); }
+      qualified.sort((a,b)=>ratingFromName(b)-ratingFromName(a));
+      const teams16=qualified.slice(0,16);
+
+      document.getElementById('mataContainer').innerHTML='';
+      document.getElementById('campeao').textContent='';
+
+      const resultsByRound=simulateBracket(teams16, rng);
+      renderMataMata(resultsByRound);
+
+      // definir fase com nome
+      const nomesFases=['Oitavas de final','Quartas de final','Semifinal','Final'];
+      renderFasesNomes(nomesFases);
+
+      const champion=resultsByRound[resultsByRound.length-1][0].winner;
+      document.getElementById('campeao').textContent='Campeão: '+champion;
+      logLine('--- Fim do mata-mata ---');
+    }
+
+    function renderFasesNomes(nomesFases){
+      // mostra título simples acima do mata-mata
+      const cont=document.getElementById('mataContainer');
+      const kids=[...cont.children];
+      if(kids.length===0) return;
+      // insere um pequeno bloco no topo
+      let title=document.getElementById('fasesTitle');
+      if(!title){
+        title=document.createElement('div');
+        title.id='fasesTitle';
+        title.style.marginBottom='10px';
+        title.style.color='#a7b4d6';
+        title.style.fontWeight='900';
+        cont.prepend(title);
+      }
+      title.textContent='Fases: '+nomesFases.join(' → ');
+    }
+
+    // Simular próximo grupo (sequencial)
+    document.getElementById('btnAvancarGrupo').addEventListener('click', async ()=>{
+      const order = window.__gruposOrder;
+      let idx = window.__nextGrupoIndex;
+      const rngSeed = window.__seed;
+      if(!order || rngSeed==null){ logLine('Clique em "Iniciar Grupos" primeiro.'); return; }
+      if(!window.__classificados) window.__classificados = {};
+      if(idx >= order.length){ logLine('Todos os grupos já foram simulados.'); return; }
+
+      const rng = mulberry32(rngSeed + idx); // preserva diversidade sem travar seed principal
+      const g = order[idx];
+      logLine(`\nAvançando para o Grupo ${g}...`);
+
+      window.__classificados[g] = await simulateGrupo(g, rng);
+      window.__nextGrupoIndex = idx + 1;
+      renderGrupos(window.__classificados);
+
+      if(window.__nextGrupoIndex >= order.length){
+        logLine('--- Fim da fase de grupos ---');
+      }
+    });
+
+    // Eventos de botões
+    document.getElementById('btnSimularGrupos').addEventListener('click',()=>simulateGroups());
+    document.getElementById('btnSimularMataMata').addEventListener('click',()=>simulateMataMata());
+    document.getElementById('btnNovoSorteio').addEventListener('click',()=>simulateGroups());
+    document.getElementById('btnLimpar').addEventListener('click',()=>clearAll());
+
+    // Carregar com uma simulação inicial
+    simulateGroups(Date.now()%1000000000);
+  </script>
+</body>
+</html>
+
